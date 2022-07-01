@@ -1,53 +1,47 @@
 const { ApolloServer, gql } = require("apollo-server");
-7;
+const { PrismaClient } = require("@prisma/client");
 const fs = require("fs");
 const path = require("path");
 
-let links = [
-  {
-    id: "link-0",
-    url: "www.howtographql.com",
-    description: "Fullstack tutorial for GraphQL",
-  },
-];
-
+const prisma = new PrismaClient();
+let links = [];
 const resolvers = {
   Query: {
-    info: () => "🚀 it works 😀",
-    feed: () => links,
+    feed: async (parent, args, context) => {
+      return context.prisma.link.findMany();
+    },
     link: (parent, { id }) => {
       return links.find((link) => link.id === id);
     },
   },
   Mutation: {
-    addLink: (parent, { url, description }) => {
-      let idCount = links.length;
-      const newLink = {
-        id: `link-${idCount++}`,
-        description,
-        url,
-      };
-      links.push(newLink);
+    addLink: async (parent, { url, description }, context) => {
+      const newLink = await context.prisma.link.create({
+        data: {
+          description,
+          url,
+        },
+      });
       return newLink;
     },
-    updateLink: (parent, { id, url, description }) => {
-      return links.find((link) => {
-        if (link.id === id) {
-          link.description = description;
-          link.url = url;
-        }
-      });
+    updateLink: (parent, { id, url, description }, context) => {
+        const link = await context.prisma.link.update({
+            where: { id},
+            data: { published: true },
+        })
+        return link
     },
-    deleteLink: (parent, { id }) => {
-      links.filter((link) => link.id !== id);
-      return null;
-    },
+    // deleteLink: async (parent, { id }, context ) => {
+    // //   await context.link.
+    //   return null;
+    // },
   },
 };
 
 const server = new ApolloServer({
   typeDefs: fs.readFileSync(path.join(__dirname, "schema.graphql"), "utf8"),
   resolvers,
+  context: { prisma },
   csrfProtection: true,
   cache: true,
 });
