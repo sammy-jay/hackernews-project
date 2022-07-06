@@ -41,8 +41,7 @@ const server = new ApolloServer({
       userId: req && req.headers.authorization ? getUserId(req) : null,
     };
   },
-  csrfProtection: true,
-  cache: true,
+  
 });
 
 server.listen().then(({ url }) => console.log(`Server listening on ${url}`));
